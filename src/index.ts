@@ -25,7 +25,7 @@ const job = schedule.scheduleJob(process.env.JOB_SCHEDULE, async function () {
     }
 
     // 로또 구매
-    const gameCount = parseInt(process.env.LOTTO_BUY_COUNT || '5', 10) || 5;
+    const gameCount = parseInt(process.env.LOTTO_BUY_COUNT ?? '5', 10) || 5;
     const result = await lottoService.buyLotto(gameCount);
     if (result.success) {
       await sendNotification('구매 성공', result.message);

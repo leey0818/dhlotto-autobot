@@ -9,7 +9,18 @@ type ResponseMessage = {
   message: string;
 };
 
+type UserReadyResponse = {
+  direct_yn: string;
+  ready_ip: string;
+  ready_time: string;
+  ready_cnt: string;
+};
+
 type LottoBuyResult = {
+  oltInetUserId: string;
+  issueTime: string;
+  issueDay: string;
+  weekDay: string;
   buyRound: string;
   barCode1: string;
   barCode2: string;
@@ -17,19 +28,25 @@ type LottoBuyResult = {
   barCode4: string;
   barCode5: string;
   barCode6: string;
-  nBuyAmount: string;
+  nBuyAmount: number;
   arrGameChoiceNum: string[];
+  resultCode: string;
   resultMsg: string;
 };
 
+type LottoBuyResponse = {
+  loginYn: string;
+  result: LottoBuyResult;
+};
+
 enum URL {
-  DIRECT = "INTCOM2",
   SESSION = "https://dhlottery.co.kr/gameResult.do?method=byWin&wiselog=H_C_1_1",
   BUY = "https://ol.dhlottery.co.kr/olotto/game/execBuy.do",
   ROUND_INFO = "https://www.dhlottery.co.kr/common.do?method=main",
   SYSTEM_CHECK = "https://dhlottery.co.kr/index_check.html",
   MAIN = "https://dhlottery.co.kr/common.do?method=main",
   LOGIN_REQUEST = "https://www.dhlottery.co.kr/userSsl.do?method=login",
+  USER_READY = 'https://ol.dhlottery.co.kr/olotto/game/egovUserReadySocket.json',
 }
 
 enum ERROR {
@@ -44,11 +61,9 @@ enum ERROR {
 
 const getLottoRequestHeaders = () => ({
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-  'Host': 'dhlottery.co.kr',
   'sec-ch-ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
   'sec-ch-ua-mobile': '?0',
   'Upgrade-Insecure-Requests': '1',
-  'Origin': 'https://dhlottery.co.kr',
   'Content-Type': 'application/x-www-form-urlencoded',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
   'Referer': 'https://dhlottery.co.kr/',
@@ -58,6 +73,16 @@ const getLottoRequestHeaders = () => ({
   'Sec-Fetch-User': '?1',
   'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
 });
+
+const getResponseCharset = (contentType: string) => {
+  if (contentType) {
+    const matches = contentType.match(/charset=(.+)/);
+    if (matches && matches.length > 1) {
+      return matches[1];
+    }
+  }
+  return 'UTF-8';
+}
 
 export default class LottoService {
   axiosClient: AxiosInstance;
@@ -75,11 +100,17 @@ export default class LottoService {
       return config;
     });
     this.axiosClient.interceptors.response.use((response) => {
-      response.data = iconv.decode(response.data, 'EUC-KR');
+      const contentType = response.headers['content-type'];
+      response.data = iconv.decode(response.data, getResponseCharset(contentType));
+      if (contentType.includes('application/json')) {
+        try {
+          response.data = JSON.parse(response.data);
+        } catch {}
+      }
       return response;
     }, (err) => {
       if (isAxiosError(err) && err.response?.data) {
-        err.response.data = iconv.decode(err.response.data, 'EUC-KR');
+        err.response.data = iconv.decode(err.response.data, getResponseCharset(err.response.headers['content-type']));
       }
       throw err;
     });
@@ -170,9 +201,10 @@ export default class LottoService {
     }
 
     const round = await this.getRound();
+    const direct = await this.getUserReadyIp();
     const body = {
       round,
-      direct: URL.DIRECT,
+      direct,
       nBuyAmount: String(1000 * gameCount),
       param: JSON.stringify(choiceParams),
       gameCnt: String(gameCount),
@@ -180,8 +212,9 @@ export default class LottoService {
 
     logger.debug('request body: ', JSON.stringify(body));
 
-    const response = await this.axiosClient.post(URL.BUY, body);
-    const result: LottoBuyResult = response.data?.result;
+    const response = await this.axiosClient.post<LottoBuyResponse>(URL.BUY, body);
+    const result = response.data?.result;
+    logger.debug('buy result: ', response.data);
     if (result?.resultMsg?.toUpperCase() !== 'SUCCESS') {
       return { success: false, message: `${ERROR.buyFailed}\n${result?.resultMsg || ERROR.emptyResult}`};
     }
@@ -191,16 +224,29 @@ export default class LottoService {
       success: true,
       message: `✅ 구매를 완료하였습니다.
 ------------------
-구매회차:\t\t제 ${result.buyRound}회
-바코드:\t${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${result.barCode5} ${result.barCode6}
-금액:\t\t${result.nBuyAmount}
+제 ${result.buyRound}회
+금액: ${(result.nBuyAmount || 0).toLocaleString()}원
 구매번호:\n${this.formatLottoNumbers(result)}
-결과메세지:\t${result.resultMsg}
+----------------------
+${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${result.barCode5} ${result.barCode6}
 ----------------------`,
     };
   }
 
+  private async getUserReadyIp() {
+    const response = await axios.post<UserReadyResponse>(URL.USER_READY);
+    return response.data?.ready_ip;
+  }
+
   private formatLottoNumbers(result: LottoBuyResult) {
-    return result.arrGameChoiceNum.map((line) => `\t\t${line.slice(0, -1)}`).join('\n');
+    return result.arrGameChoiceNum.map((line) => {
+      const lineArr = line.slice(0, -1).split('|');
+      const alpabet = lineArr[0];
+      const genType = line.slice(-1);
+      const genTypeName = genType === '0' ? '자동' : genType === '1' ? '수동' : genType === '2' ? '반자동' : genType;
+      const pad = (text: string) => `  ${text}`.slice(-2);
+
+      return `${alpabet} ${genTypeName} ${pad(lineArr[1])} ${pad(lineArr[2])} ${pad(lineArr[3])} ${pad(lineArr[4])} ${pad(lineArr[5])} ${pad(lineArr[6])}`;
+    }).join('\n');
   }
 }
