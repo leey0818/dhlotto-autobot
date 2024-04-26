@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 /**
  * 로또 번호 6개 생성
  */
-export const generateLottoNumber = () => {
+export const generateLottoNumbers = () => {
   const numbers: number[] = [];
 
   while (true) {

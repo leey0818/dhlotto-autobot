@@ -1,8 +1,16 @@
 import axios, { AxiosInstance, isAxiosError } from 'axios';
 import { load } from 'cheerio';
+import { stringify } from 'node:querystring';
 import iconv from 'iconv-lite';
 import logger from '../utils/logger.js';
-import { generateLottoNumber } from './generate.js';
+import { generateLottoNumbers } from './generate.js';
+import {
+  ERROR_COOKIE_NOT_FOUND, ERROR_EMPTY_RESULT, ERROR_LOGIN_FAILED,
+  ERROR_MAINTENANCE,
+  ERROR_REQUEST_FAILED, URL_BUY, URL_GAME_RESULT, URL_LOGIN_REQUEST, URL_MAIN, URL_MYPAGE, URL_ROUND_INFO,
+  URL_SESSION,
+  URL_SYSTEM_CHECK, URL_USER_READY
+} from './constrants.js';
 
 type ResponseMessage = {
   success: boolean;
@@ -39,38 +47,11 @@ type LottoBuyResponse = {
   result: LottoBuyResult;
 };
 
-enum URL {
-  SESSION = "https://dhlottery.co.kr/gameResult.do?method=byWin&wiselog=H_C_1_1",
-  BUY = "https://ol.dhlottery.co.kr/olotto/game/execBuy.do",
-  ROUND_INFO = "https://www.dhlottery.co.kr/common.do?method=main",
-  SYSTEM_CHECK = "https://dhlottery.co.kr/index_check.html",
-  MAIN = "https://dhlottery.co.kr/common.do?method=main",
-  LOGIN_REQUEST = "https://www.dhlottery.co.kr/userSsl.do?method=login",
-  USER_READY = 'https://ol.dhlottery.co.kr/olotto/game/egovUserReadySocket.json',
-}
-
-enum ERROR {
-  maintenance = "동행복권 사이트가 현재 시스템 점검중입니다.",
-  requestFailed = "데이터 요청에 실패하였습니다.",
-  cookieNotFound = "쿠키가 정상적으로 세팅되지 않았습니다.",
-  // undefinedUser = "아이디와 비밀번호가 undefined입니다.",
-  loginFailed = "로그인에 실패했습니다.",
-  buyFailed = "구매에 실패했습니다.",
-  emptyResult = "result message is empty",
-}
-
 const getLottoRequestHeaders = () => ({
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-  'sec-ch-ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-  'sec-ch-ua-mobile': '?0',
   'Upgrade-Insecure-Requests': '1',
   'Content-Type': 'application/x-www-form-urlencoded',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
   'Referer': 'https://dhlottery.co.kr/',
-  'Sec-Fetch-Dest': 'document',
-  'Sec-Fetch-Mode': 'navigate',
-  'Sec-Fetch-Site': 'none',
-  'Sec-Fetch-User': '?1',
   'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
 });
 
@@ -84,14 +65,14 @@ const getResponseCharset = (contentType: string) => {
   return 'UTF-8';
 }
 
-export default class LottoService {
+class LottoService {
   axiosClient: AxiosInstance;
 
   constructor() {
     this.axiosClient = axios.create({
       timeout: 10000,
-      headers: getLottoRequestHeaders(),
       responseType: 'arraybuffer',
+      headers: getLottoRequestHeaders(),
     });
     this.axiosClient.interceptors.request.use((config) => {
       if (config.method?.toLowerCase() !== 'post') {
@@ -117,18 +98,18 @@ export default class LottoService {
   }
 
   /**
-   * 1단계) 동행복권 사이트 세션 생성
+   * 동행복권 사이트 세션 생성
    */
   async createSession(): Promise<ResponseMessage> {
-    const response = await this.axiosClient.get(URL.SESSION);
+    const response = await this.axiosClient.get(URL_SESSION);
     const cookies = response.headers['set-cookie']?.map((c) => c.split(';')[0].trim());
 
-    if (response.request.res.responseUrl === URL.SYSTEM_CHECK) {
-      return { success: false, message: ERROR.maintenance };
+    if (response.request.res.responseUrl === URL_SYSTEM_CHECK) {
+      return { success: false, message: ERROR_MAINTENANCE };
     }
 
     if (response.status < 200 || response.status >= 300) {
-      return {success: false, message: `${ERROR.requestFailed} ${response.status} ${response.statusText}`};
+      return {success: false, message: `${ERROR_REQUEST_FAILED} ${response.status} ${response.statusText}`};
     }
 
     const jsessionId = cookies?.find((c) => c.includes('JSESSIONID'));
@@ -138,22 +119,23 @@ export default class LottoService {
       return { success: true, message: 'OK' };
     }
 
-    return { success: false, message: ERROR.cookieNotFound };
+    return { success: false, message: ERROR_COOKIE_NOT_FOUND };
   }
 
   /**
-   * 2단계) 동행복권 사이트 로그인
-   * @param userId 사용자ID
-   * @param userPw 사용자비밀번호
+   * 동행복권 사이트 로그인
    */
-  async doLogin(userId: string, userPw: string): Promise<ResponseMessage> {
+  async doLogin(): Promise<ResponseMessage> {
+    const userId = process.env.LOTTO_USER_ID;
+    const userPw = process.env.LOTTO_USER_PW;
+
     const sessionResult = await this.createSession();
     if (!sessionResult.success) {
       return sessionResult;
     }
 
-    const response = await this.axiosClient.post(URL.LOGIN_REQUEST, {
-      returnUrl: URL.MAIN,
+    const response = await this.axiosClient.post(URL_LOGIN_REQUEST, {
+      returnUrl: URL_MAIN,
       userId,
       password: userPw,
       checkSave: 'on',
@@ -169,30 +151,65 @@ export default class LottoService {
       }
     }
 
-    return { success: false, message: ERROR.loginFailed };
+    return { success: false, message: ERROR_LOGIN_FAILED };
   }
 
   /**
-   * 3단계) 현재 로또 진행회차 가져오기 (마지막회차 +1)
+   * 마지막 로또 회차 가져오기
    */
-  async getRound() {
-    const response = await this.axiosClient.get(URL.ROUND_INFO);
-    const $load = load(response.data);
-    const lastRound = parseInt($load('strong#lottoDrwNo').text(), 10);
-    return String(lastRound + 1);
+  async getLastRound() {
+    const response = await this.axiosClient.get(URL_ROUND_INFO);
+    const $ = load(response.data);
+    const round = parseInt($('strong#lottoDrwNo').text(), 10) || -1;
+    const numbers = $('a#numView > span[id^="drwtNo"]').map((_, el) => parseInt($(el).text().trim(), 10)).get();
+    const bonusNo = parseInt($('a#numView > span#bnusNo').text(), 10);
+    return { round, numbers, bonusNo };
   }
 
   /**
-   * 4단계) 로또 구매
+   * 로또 회차별 당첨번호 가져오기 (최대 20회차)
+   * @param startRound 시작 회차
+   * @param endRound 종료 회차
    */
-  async buyLotto(gameCount = 5) {
+  async getGameResultByRounds(startRound: number, endRound: number) {
+    if (endRound < startRound) throw new Error('종료 회차는 시작 회차보다 커야 합니다.');
+    if ((endRound - startRound) > 20) throw new Error('최대 20회차만 가져올 수 있습니다.');
+
+    const response = await this.axiosClient.get(URL_GAME_RESULT + '&' + stringify({ drwNoStart: startRound, drwNoEnd: endRound }));
+    const $ = load(response.data);
+    return $('table.tbl_data_col > tbody > tr').map((_, el) => {
+      const $tr = $(el);
+      const round = $tr.children('td:eq(0)').text().slice(0, -1);
+      const numbers = $tr.find('td:eq(1) > span').map((__, span) => {
+        return $(span).text();
+      }).get();
+      const bonusNo = $tr.find('td:eq(2) > span').text();
+      return { round, numbers, bonusNo };
+    }).get();
+  }
+
+  /**
+   * 나의 예치금 조회
+   */
+  async getMyAccountMoney() {
+    const response = await this.axiosClient.get(URL_MYPAGE);
+    const $ = load(response.data);
+    const moneyText = $('div.content_mypage_home div.money p.total_new > strong').text().replace(/[^0-9]/g, '');
+    return parseInt(moneyText, 10);
+  }
+
+  /**
+   * 로또 구매
+   * @param gameCount 구매 게임수
+   */
+  async buyLotto(gameCount = 5): Promise<ResponseMessage> {
     if (gameCount < 1 || gameCount > 5) {
       throw new Error('한 회차 당 최대 5,000원 까지만 구매 가능합니다.');
     }
 
     const choiceParams = [];
     for (let i = 0; i < gameCount; i++) {
-      const numbers = generateLottoNumber();
+      const numbers = generateLottoNumbers();
       choiceParams.push({
         genType: '1', // 수동
         arrGameChoiceNum: numbers.join(','),  // 선택한 번호 6개
@@ -200,10 +217,11 @@ export default class LottoService {
       });
     }
 
-    const round = await this.getRound();
+    const curMoney = await this.getMyAccountMoney();
+    const lastRound = await this.getLastRound();
     const direct = await this.getUserReadyIp();
     const body = {
-      round,
+      round: String(lastRound.round + 1),
       direct,
       nBuyAmount: String(1000 * gameCount),
       param: JSON.stringify(choiceParams),
@@ -212,29 +230,33 @@ export default class LottoService {
 
     logger.debug('request body: ', JSON.stringify(body));
 
-    const response = await this.axiosClient.post<LottoBuyResponse>(URL.BUY, body);
+    const response = await this.axiosClient.post<LottoBuyResponse>(URL_BUY, body);
     const result = response.data?.result;
-    logger.debug('buy result: ', response.data);
     if (result?.resultMsg?.toUpperCase() !== 'SUCCESS') {
-      return { success: false, message: `${ERROR.buyFailed}\n${result?.resultMsg || ERROR.emptyResult}`};
+      logger.warn('로또 구매 실패! ', JSON.stringify(response.data));
+      return { success: false, message: `${result?.resultMsg || ERROR_EMPTY_RESULT}`};
     }
+
+    // 남은 예치금 계산
+    const remainMoney = curMoney - result.nBuyAmount;
+    const isNotEnoughMoney = remainMoney < result.nBuyAmount;
 
     // 구매 성공!
     return {
       success: true,
       message: `✅ 구매를 완료하였습니다.
-------------------
+==================================
 제 ${result.buyRound}회
-금액: ${(result.nBuyAmount || 0).toLocaleString()}원
+금액: ${(result.nBuyAmount || 0).toLocaleString()}원 (남은 예치금: ${remainMoney.toLocaleString()}원)
 구매번호:\n${this.formatLottoNumbers(result)}
-----------------------
+==================================
 ${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${result.barCode5} ${result.barCode6}
-----------------------`,
+==================================${isNotEnoughMoney ? '\n💸 예치금이 부족합니다. 예치금을 충전해 주세요.' : ''}`,
     };
   }
 
   private async getUserReadyIp() {
-    const response = await axios.post<UserReadyResponse>(URL.USER_READY);
+    const response = await axios.post<UserReadyResponse>(URL_USER_READY);
     return response.data?.ready_ip;
   }
 
@@ -250,3 +272,15 @@ ${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${re
     }).join('\n');
   }
 }
+
+export type LottoServiceType = InstanceType<typeof LottoService>;
+export const getLottoService = (() => {
+  let lottoService: LottoService;
+
+  return () => {
+    if (!lottoService) {
+      lottoService = new LottoService();
+    }
+    return lottoService;
+  };
+})();
