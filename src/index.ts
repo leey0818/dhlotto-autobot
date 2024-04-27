@@ -67,7 +67,7 @@ logger.info('스케쥴 실행 대기:', job.nextInvocation()?.toString());
     const curRound = await getLottoService().getLastRound();
     prevRound = curRound.round;
   } catch (e) {
-    logger.warn('현재 담첨회차 가져오기 실패', e);
+    logger.warn('현재 당첨회차 가져오기 실패', e);
   }
 
   const notifyWinnerNumberSchedule = async () => {

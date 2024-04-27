@@ -7,7 +7,7 @@ import { generateLottoNumbers } from './generate.js';
 import {
   ERROR_COOKIE_NOT_FOUND, ERROR_EMPTY_RESULT, ERROR_LOGIN_FAILED,
   ERROR_MAINTENANCE,
-  ERROR_REQUEST_FAILED, URL_BUY, URL_GAME_RESULT, URL_LOGIN_REQUEST, URL_MAIN, URL_MYPAGE, URL_ROUND_INFO,
+  ERROR_REQUEST_FAILED, URL_BUY, URL_GAME_RESULT, URL_LOGIN_REQUEST, URL_MAIN, URL_MYPAGE, URL_MAINPAGE,
   URL_SESSION,
   URL_SYSTEM_CHECK, URL_USER_READY
 } from './constrants.js';
@@ -158,7 +158,7 @@ class LottoService {
    * 마지막 로또 회차 가져오기
    */
   async getLastRound() {
-    const response = await this.axiosClient.get(URL_ROUND_INFO);
+    const response = await this.axiosClient.get(URL_MAINPAGE);
     const $ = load(response.data);
     const round = parseInt($('strong#lottoDrwNo').text(), 10) || -1;
     const numbers = $('a#numView > span[id^="drwtNo"]').map((_, el) => parseInt($(el).text().trim(), 10)).get();
