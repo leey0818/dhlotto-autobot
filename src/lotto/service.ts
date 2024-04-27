@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, isAxiosError } from 'axios';
+import axios, { AxiosInstance, isAxiosError, RawAxiosRequestHeaders } from 'axios';
 import { load } from 'cheerio';
 import { stringify } from 'node:querystring';
 import iconv from 'iconv-lite';
@@ -47,7 +47,7 @@ type LottoBuyResponse = {
   result: LottoBuyResult;
 };
 
-const getLottoRequestHeaders = () => ({
+const getLottoRequestHeaders = (): RawAxiosRequestHeaders => ({
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
   'Upgrade-Insecure-Requests': '1',
   'Content-Type': 'application/x-www-form-urlencoded',

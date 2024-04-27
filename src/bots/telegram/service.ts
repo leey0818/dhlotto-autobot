@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { TelegramCommandLayout } from './command.js';
+import { TelegramCommandLayout, telegramCommands } from './command.js';
 import logger from '../../utils/logger.js';
 
 export default class TelegramService {
@@ -11,6 +11,7 @@ export default class TelegramService {
     this.botToken = botToken;
     this.chatId = chatId;
     this.botApi = new TelegramBot(botToken, { polling: true });
+    this.setTelegramCommands(telegramCommands);
   }
 
   sendMessage(chatId: string, text: string) {
@@ -25,7 +26,7 @@ export default class TelegramService {
     commands.forEach((command) => {
       const type = command[0];
       const executor = command[1];
-      this.botApi.onText(command[0], async (msg) => {
+      this.botApi.onText(type, async (msg) => {
         try {
           const resultMessage = await executor(msg, this);
           await this.botApi.sendMessage(msg.chat.id, resultMessage);
