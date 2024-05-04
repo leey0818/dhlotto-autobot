@@ -11,6 +11,7 @@ import {
   URL_SESSION,
   URL_SYSTEM_CHECK, URL_USER_READY
 } from './constants.js';
+import store from '../utils/store.js';
 
 type ResponseMessage = {
   success: boolean;
@@ -161,9 +162,10 @@ class LottoService {
     const response = await this.axiosClient.get(URL_MAINPAGE);
     const $ = load(response.data);
     const round = parseInt($('strong#lottoDrwNo').text(), 10) || -1;
+    const date = $('span#drwNoDate').text().replace(/[^0-9]/g, '');
     const numbers = $('a#numView > span[id^="drwtNo"]').map((_, el) => parseInt($(el).text().trim(), 10)).get();
     const bonusNo = parseInt($('a#numView > span#bnusNo').text(), 10);
-    return { round, numbers, bonusNo };
+    return { round, date, numbers, bonusNo };
   }
 
   /**
@@ -241,6 +243,9 @@ class LottoService {
     const remainMoney = curMoney - result.nBuyAmount;
     const isNotEnoughMoney = remainMoney < result.nBuyAmount;
 
+    // 구매 데이터 저장
+    store.set(`buyRounds.${result.buyRound}`, { numbers: this.getLottoNumbers(result) });
+
     // 구매 성공!
     return {
       success: true,
@@ -258,6 +263,14 @@ ${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${re
   private async getUserReadyIp() {
     const response = await axios.post<UserReadyResponse>(URL_USER_READY);
     return response.data?.ready_ip;
+  }
+
+  private getLottoNumbers(result: LottoBuyResult) {
+    return result.arrGameChoiceNum.map((line) => {
+      const lineArr = line.slice(0, -1).split('|');
+      const toNum = (str: string) => parseInt(str, 10);
+      return [toNum(lineArr[1]), toNum(lineArr[2]), toNum(lineArr[3]), toNum(lineArr[4]), toNum(lineArr[5]), toNum(lineArr[6])];
+    });
   }
 
   private formatLottoNumbers(result: LottoBuyResult) {

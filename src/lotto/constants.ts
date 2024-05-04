@@ -7,6 +7,7 @@ export const URL_MYPAGE = 'https://dhlottery.co.kr/userSsl.do?method=myPage';
 export const URL_GAME_RESULT = 'https://dhlottery.co.kr/gameResult.do?method=allWinPrint&gubun=byWin&nowPage=';
 export const URL_BUY = 'https://ol.dhlottery.co.kr/olotto/game/execBuy.do';
 export const URL_USER_READY = 'https://ol.dhlottery.co.kr/olotto/game/egovUserReadySocket.json';
+export const URL_WINQR_PAGE = 'https://m.dhlottery.co.kr/qr.do?method=winQr';
 
 export const ERROR_MAINTENANCE = '동행복권 사이트가 현재 시스템 점검중입니다.';
 export const ERROR_REQUEST_FAILED = '데이터 요청에 실패하였습니다.';
