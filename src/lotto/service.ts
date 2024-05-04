@@ -10,7 +10,7 @@ import {
   ERROR_REQUEST_FAILED, URL_BUY, URL_GAME_RESULT, URL_LOGIN_REQUEST, URL_MAIN, URL_MYPAGE, URL_MAINPAGE,
   URL_SESSION,
   URL_SYSTEM_CHECK, URL_USER_READY
-} from './constrants.js';
+} from './constants.js';
 
 type ResponseMessage = {
   success: boolean;
