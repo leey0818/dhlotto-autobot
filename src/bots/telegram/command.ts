@@ -14,10 +14,11 @@ const getErrorMessage = (err: unknown) => {
   }
 };
 
-export type TelegramCommandLayout = [RegExp, (msg: TelegramBot.Message, telegram: TelegramService) => Promise<string>];
+export type TelegramCommandLayout = [RegExp, string, (msg: TelegramBot.Message, telegram: TelegramService) => Promise<string>];
 export const telegramCommands: TelegramCommandLayout[] = [
   [
     /\/money/,
+    '내 예치금을 조회합니다.',
     async (msg, telegramService) => {
       const lottoService = getLottoService();
       const loginResult = await lottoService.doLogin();

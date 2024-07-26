@@ -25,7 +25,7 @@ export default class TelegramService {
   setTelegramCommands(commands: TelegramCommandLayout[]) {
     commands.forEach((command) => {
       const type = command[0];
-      const executor = command[1];
+      const executor = command[2];
       this.botApi.onText(type, async (msg) => {
         try {
           const resultMessage = await executor(msg, this);

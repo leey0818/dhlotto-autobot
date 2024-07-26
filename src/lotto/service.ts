@@ -209,13 +209,14 @@ class LottoService {
       throw new Error('한 회차 당 최대 5,000원 까지만 구매 가능합니다.');
     }
 
+    const genType = process.env.LOTTO_BUY_TYPE === 'M' ? '1' : '0';
     const choiceParams = [];
     for (let i = 0; i < gameCount; i++) {
-      const numbers = generateLottoNumbers();
       choiceParams.push({
-        genType: '1', // 수동
-        arrGameChoiceNum: numbers.join(','),  // 선택한 번호 6개
+        genType, // 0: 자동, 1: 수동
         alpabet: 'ABCDE'.charAt(i),
+        // 수동 일 때 번호 생성
+        arrGameChoiceNum: genType === '1' ? generateLottoNumbers().join(',') : '',
       });
     }
 

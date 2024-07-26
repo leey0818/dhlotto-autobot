@@ -9,6 +9,7 @@ declare global {
 
       LOTTO_USER_ID: string;
       LOTTO_USER_PW: string;
+      LOTTO_BUY_TYPE?: string;
       LOTTO_BUY_COUNT?: string;
     }
   }
