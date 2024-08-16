@@ -279,7 +279,7 @@ ${result.barCode1} ${result.barCode2} ${result.barCode3} ${result.barCode4} ${re
       const lineArr = line.slice(0, -1).split('|');
       const alpabet = lineArr[0];
       const genType = line.slice(-1);
-      const genTypeName = genType === '0' ? '자동' : genType === '1' ? '수동' : genType === '2' ? '반자동' : genType;
+      const genTypeName = genType === '3' ? '자동' : genType === '1' ? '수동' : genType === '2' ? '반자동' : genType;
       const pad = (text: string) => `  ${text}`.slice(-2);
 
       return `${alpabet} ${genTypeName} ${pad(lineArr[1])} ${pad(lineArr[2])} ${pad(lineArr[3])} ${pad(lineArr[4])} ${pad(lineArr[5])} ${pad(lineArr[6])}`;
