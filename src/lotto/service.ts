@@ -216,7 +216,7 @@ class LottoService {
         genType, // 0: 자동, 1: 수동
         alpabet: 'ABCDE'.charAt(i),
         // 수동 일 때 번호 생성
-        arrGameChoiceNum: genType === '1' ? generateLottoNumbers().join(',') : '',
+        arrGameChoiceNum: genType === '1' ? generateLottoNumbers(i + 1).join(',') : '',
       });
     }
 
