@@ -7,6 +7,7 @@ type StoreSchema = {
     numbers: number[];
     bonusNo: number;
   };
+  lastBuyRound: number;
   buyRounds: Record<string, {
     numbers: number[][];
   }>;

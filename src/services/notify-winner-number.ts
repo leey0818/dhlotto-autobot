@@ -21,6 +21,12 @@ const notifyWinnerNumber = async () => {
     const lottoService = getLottoService();
     const roundInfo = await lottoService.getLastRound();
 
+    // 마지막 구매회차보다 이전 차수면 무시 (아직 당첨발표하지 않은 경우)
+    const lastBuyRound = store.get('lastBuyRound') ?? 0;
+    if (lastBuyRound > 0 && roundInfo.round < lastBuyRound) {
+      return;
+    }
+
     await sendNotification(`제 ${roundInfo.round}회 당첨번호 🎉`, roundInfo.numbers.join(' ') + ' + ' + roundInfo.bonusNo);
 
     // 라운드 정보 저장

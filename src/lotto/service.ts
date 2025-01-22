@@ -246,6 +246,7 @@ class LottoService {
 
     // 구매 데이터 저장
     store.set(`buyRounds.${result.buyRound}`, { numbers: this.getLottoNumbers(result) });
+    store.set('lastBuyRound', Number(result.buyRound));
 
     // 구매 성공!
     return {
