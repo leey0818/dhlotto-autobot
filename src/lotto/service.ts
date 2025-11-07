@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, isAxiosError, RawAxiosRequestHeaders } from 'axios';
-import { load } from 'cheerio';
+import { CheerioAPI, load } from 'cheerio';
 import { stringify } from 'node:querystring';
 import iconv from 'iconv-lite';
 import logger from '../utils/logger.js';
@@ -9,7 +9,7 @@ import {
   ERROR_MAINTENANCE,
   ERROR_REQUEST_FAILED, URL_BUY, URL_GAME_RESULT, URL_LOGIN_REQUEST, URL_MAIN, URL_MYPAGE, URL_MAINPAGE,
   URL_SESSION,
-  URL_SYSTEM_CHECK, URL_USER_READY
+  URL_SYSTEM_CHECK, URL_USER_READY, URL_CHANGE_PASSWORD
 } from './constants.js';
 import store from '../utils/store.js';
 
@@ -118,6 +118,12 @@ class LottoService {
       this.axiosClient.defaults.headers.common['Cookie'] = jsessionId;
       logger.debug('JSESSIONID was successfully extracted.', jsessionId);
       return { success: true, message: 'OK' };
+    } else {
+      const cookie = response.request.getHeader('cookie');
+      if (typeof cookie === 'string' && cookie.includes('JSESSIONID')) {
+        logger.debug('JSESSIONID already exists');
+        return { success: true, message: 'OK' };
+      }
     }
 
     return { success: false, message: ERROR_COOKIE_NOT_FOUND };
@@ -145,7 +151,14 @@ class LottoService {
 
     if (response.status >= 200 && response.status < 300) {
       const $load = load(response.data);
-      const isSuccess = $load('a.btn_common.lrg.blu').length === 0;
+      let isSuccess: boolean;
+
+      // 비밀번호 변경 페이지인지 확인
+      if ($load('div.content_change_password').length > 0) {
+        isSuccess = await this.doSkipChangePassword($load);
+      } else {
+        isSuccess = $load('a.btn_common.lrg.blu').length === 0;
+      }
 
       if (isSuccess) {
         return { success: true, message: '로그인 성공' };
@@ -153,6 +166,30 @@ class LottoService {
     }
 
     return { success: false, message: ERROR_LOGIN_FAILED };
+  }
+
+  /**
+   * 비밀번호 변경 페이지 우회
+   * @param $dom
+   */
+  async doSkipChangePassword($dom: CheerioAPI) {
+    const $form = $dom('form[name="userIdCheckForm"] input');
+    if ($form.length > 0) {
+      const inputs: Record<string, string> = {};
+      $form.each((i, el) => {
+        const $input = $dom(el);
+        const name = $input.attr('name');
+        const value = $input.val();
+        if (name && typeof value === 'string') {
+          inputs[name] = value;
+        }
+      });
+
+      await this.axiosClient.post(URL_CHANGE_PASSWORD, inputs);
+      return true;
+    }
+
+    return false;
   }
 
   /**
