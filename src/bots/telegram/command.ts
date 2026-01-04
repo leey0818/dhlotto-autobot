@@ -29,7 +29,7 @@ export const telegramCommands: TelegramCommandLayout[] = [
       try {
         // 예치금 조회
         const money = await lottoService.getMyAccountMoney();
-        return format('현재 내 예치금은 {money}원 입니다.', { money: money.toLocaleString() });
+        return format('현재 구매가능 금액은 {money}원 입니다.', { money: money.toLocaleString() });
       } catch (err) {
         return '예치금 조회에 실패했습니다.\n' + getErrorMessage(err);
       }

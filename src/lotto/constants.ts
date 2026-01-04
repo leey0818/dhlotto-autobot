@@ -1,12 +1,14 @@
-export const URL_MAIN = 'https://dhlottery.co.kr/common.do?method=main';
-export const URL_SESSION = 'https://dhlottery.co.kr/gameResult.do?method=byWin&wiselog=H_C_1_1';
-export const URL_SYSTEM_CHECK = 'https://dhlottery.co.kr/index_check.html';
-export const URL_LOGIN_REQUEST = 'https://dhlottery.co.kr/userSsl.do?method=login';
-export const URL_MAINPAGE = 'https://dhlottery.co.kr/common.do?method=main&mainMode=default';
-export const URL_MYPAGE = 'https://dhlottery.co.kr/userSsl.do?method=myPage';
-export const URL_GAME_RESULT = 'https://dhlottery.co.kr/gameResult.do?method=allWinPrint&gubun=byWin&nowPage=';
+export const URL_PAGE_HOME = 'https://dhlottery.co.kr';
+export const URL_PAGE_LOTTO645 = 'https://ol.dhlottery.co.kr/olotto/game/game645.do';
+export const URL_SELECT_RSA_MODULUS = 'https://dhlottery.co.kr/login/selectRsaModulus.do';
+export const URL_REQUEST_LOGIN = 'https://dhlottery.co.kr/login/securityLoginCheck.do';
+export const URL_REQUEST_MAININFO = 'https://www.dhlottery.co.kr/selectMainInfo.do';
+export const URL_REQUEST_MYPAGE = 'https://dhlottery.co.kr/mypage/selectUserMndp.do';
 export const URL_BUY = 'https://ol.dhlottery.co.kr/olotto/game/execBuy.do';
 export const URL_USER_READY = 'https://ol.dhlottery.co.kr/olotto/game/egovUserReadySocket.json';
+
+export const URL_SYSTEM_CHECK = 'https://dhlottery.co.kr/index_check.html';
+export const URL_GAME_RESULT = 'https://dhlottery.co.kr/gameResult.do?method=allWinPrint&gubun=byWin&nowPage=';
 export const URL_WINQR_PAGE = 'https://m.dhlottery.co.kr/qr.do?method=winQr';
 export const URL_CHANGE_PASSWORD = 'https://dhlottery.co.kr/userSsl.do?method=pspnPwChng';
 

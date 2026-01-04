@@ -1,3 +1,5 @@
+import type { CookieJar } from 'tough-cookie';
+
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
@@ -12,6 +14,12 @@ declare global {
       LOTTO_BUY_TYPE?: string;
       LOTTO_BUY_COUNT?: string;
     }
+  }
+}
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    jar?: CookieJar;
   }
 }
 
