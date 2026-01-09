@@ -3,6 +3,7 @@ import { getLottoService } from '../../lotto/service.js';
 import TelegramService from './service.js';
 import { isAxiosError } from 'axios';
 import TelegramBot from 'node-telegram-bot-api';
+import logger from '../../utils/logger.js';
 
 const getErrorMessage = (err: unknown) => {
   if (isAxiosError(err)) {
@@ -20,6 +21,8 @@ export const telegramCommands: TelegramCommandLayout[] = [
     /\/money/,
     '내 예치금을 조회합니다.',
     async (msg, telegramService) => {
+      logger.debug('예치금 조회 요청');
+
       const lottoService = getLottoService();
       const loginResult = await lottoService.doLogin();
       if (!loginResult.success) {

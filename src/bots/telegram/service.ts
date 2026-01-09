@@ -27,6 +27,11 @@ export default class TelegramService {
       const type = command[0];
       const executor = command[2];
       this.botApi.onText(type, async (msg) => {
+        if (String(msg.chat.id) !== this.chatId) {
+          logger.error('허용되지 않은 사용자로부터 요청: ' + msg.chat.id);
+          return;
+        }
+
         try {
           const resultMessage = await executor(msg, this);
           await this.botApi.sendMessage(msg.chat.id, resultMessage);
