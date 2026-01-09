@@ -1,9 +1,9 @@
-export const URL_PAGE_HOME = 'https://dhlottery.co.kr';
+export const URL_PAGE_HOME = 'https://www.dhlottery.co.kr';
 export const URL_PAGE_LOTTO645 = 'https://ol.dhlottery.co.kr/olotto/game/game645.do';
-export const URL_SELECT_RSA_MODULUS = 'https://dhlottery.co.kr/login/selectRsaModulus.do';
-export const URL_REQUEST_LOGIN = 'https://dhlottery.co.kr/login/securityLoginCheck.do';
+export const URL_SELECT_RSA_MODULUS = 'https://www.dhlottery.co.kr/login/selectRsaModulus.do';
+export const URL_REQUEST_LOGIN = 'https://www.dhlottery.co.kr/login/securityLoginCheck.do';
 export const URL_REQUEST_MAININFO = 'https://www.dhlottery.co.kr/selectMainInfo.do';
-export const URL_REQUEST_MYPAGE = 'https://dhlottery.co.kr/mypage/selectUserMndp.do';
+export const URL_REQUEST_MYPAGE = 'https://www.dhlottery.co.kr/mypage/selectUserMndp.do';
 export const URL_BUY = 'https://ol.dhlottery.co.kr/olotto/game/execBuy.do';
 export const URL_USER_READY = 'https://ol.dhlottery.co.kr/olotto/game/egovUserReadySocket.json';
 
